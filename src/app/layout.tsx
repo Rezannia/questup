@@ -1,26 +1,28 @@
-import type { Metadata, Viewport } from 'next'
-import './globals.css'
+import type { Metadata } from "next";
+import { Vazirmatn } from "next/font/google";
+import "./globals.css";
+
+const vazir = Vazirmatn({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-vazir",
+});
 
 export const metadata: Metadata = {
-  title: 'QuestUp — مسیر شغلی، ولی با حال‌وهوای خودت',
-  description: 'مسیر شغلی تعاملی با گیم‌فیکیشن. مرحله به مرحله پیش برو، مدال بگیر و به شرکت‌های خفن وصل شو.',
-}
-
-export const viewport: Viewport = {
-  themeColor: '#1e3a8a',
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,
-}
+  title: "کوئست‌آپ | مسیر شغلی با حال‌وهوای خودت",
+  description: "پلتفرم گیم‌فای‌شده کاریابی برای نسل Z",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="fa" dir="rtl">
-      <body className="antialiased">{children}</body>
+    <html lang="fa" dir="rtl" className={vazir.variable}>
+      <body className="bg-bg text-ink font-vazir antialiased">
+        {children}
+      </body>
     </html>
-  )
+  );
 }

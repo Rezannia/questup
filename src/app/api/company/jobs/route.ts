@@ -1,99 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { z } from 'zod'
-
-const jobSchema = z.object({
-  title: z.string().min(3, 'عنوان باید حداقل ۳ کاراکتر باشد').max(100),
-  description: z.string().min(20, 'توضیحات باید حداقل ۲۰ کاراکتر باشد').max(2000),
-  location: z.string().min(2).max(50),
-  type: z.enum(['full-time', 'part-time', 'remote', 'contract']),
-  level: z.enum(['junior', 'mid', 'senior']),
-  salary: z.string().max(50).optional().or(z.literal('')),
-  skills: z.array(z.string().max(30)).max(10).optional(),
-})
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { jobSchema } from "@/lib/validators";
+import { getSession } from "@/lib/auth";
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
-
-  if (session.role !== 'COMPANY') {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  }
-
-  const company = await db.company.findUnique({
-    where: { userId: session.userId },
-  })
-
-  if (!company) {
-    return NextResponse.json({ jobs: [] })
-  }
-
-  const jobs = await db.job.findMany({
-    where: { companyId: company.id },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  return NextResponse.json({ jobs })
-}
-
-export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
-
-  if (session.role !== 'COMPANY') {
-    return NextResponse.json(
-      { error: 'فقط شرکت‌ها می‌تونن شغل پست کنن' },
-      { status: 403 }
-    )
-  }
-
-  const company = await db.company.findUnique({
-    where: { userId: session.userId },
-  })
-
-  if (!company) {
-    return NextResponse.json(
-      { error: 'پروفایل شرکت پیدا نشد' },
-      { status: 404 }
-    )
-  }
-
   try {
-    const body = await req.json()
-    const parsed = jobSchema.safeParse(body)
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0].message },
-        { status: 400 }
-      )
+    const session = await getSession();
+    if (!session || session.role !== "COMPANY") {
+      return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 401 });
     }
 
-    const { title, description, location, type, level, salary, skills } =
-      parsed.data
+    const company = await prisma.company.findUnique({
+      where: { userId: session.userId },
+    });
 
-    const job = await db.job.create({
+    if (!company) {
+      return NextResponse.json({ error: "پروفایل شرکت یافت نشد" }, { status: 404 });
+    }
+
+    const jobs = await prisma.job.findMany({
+      where: { companyId: company.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ jobs });
+  } catch (error) {
+    console.error("Get jobs error:", error);
+    return NextResponse.json({ error: "خطای سرور" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== "COMPANY") {
+      return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const result = jobSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { errors: result.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const company = await prisma.company.findUnique({
+      where: { userId: session.userId },
+    });
+
+    if (!company) {
+      return NextResponse.json({ error: "پروفایل شرکت یافت نشد" }, { status: 404 });
+    }
+
+    const job = await prisma.job.create({
       data: {
         companyId: company.id,
-        title,
-        description,
-        location,
-        type,
-        level,
-        salary: salary || null,
-        skills: skills && skills.length > 0 ? JSON.stringify(skills) : null,
-        active: true,
+        title: result.data.title,
+        description: result.data.description,
+        location: result.data.location,
+        type: result.data.type,
+        level: result.data.level,
+        salary: result.data.salary,
+        skills: result.data.skills ? JSON.stringify(result.data.skills) : null,
       },
-    })
+    });
 
-    return NextResponse.json({ job }, { status: 201 })
+    return NextResponse.json({ job }, { status: 201 });
   } catch (error) {
-    console.error('Job create error:', error)
-    return NextResponse.json({ error: 'خطا در ساخت شغل' }, { status: 500 })
+    console.error("Create job error:", error);
+    return NextResponse.json({ error: "خطای سرور" }, { status: 500 });
   }
 }

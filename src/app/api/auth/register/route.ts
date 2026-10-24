@@ -1,69 +1,73 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { registerSchema } from '@/lib/validators'
-import {
-  hashPassword,
-  createSession,
-  setSessionCookie,
-} from '@/lib/auth'
+import { NextResponse } from "next/server";
+import { hash } from "bcryptjs";
+import { SignJWT } from "jose";
+import { prisma } from "@/lib/db";
+import { registerSchema } from "@/lib/validators";
 
-export async function POST(req: NextRequest) {
+const secret = new TextEncoder().encode(process.env.AUTH_SECRET || "default-secret");
+
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const parsed = registerSchema.safeParse(body)
+    const body = await request.json();
+    const result = registerSchema.safeParse(body);
 
-    if (!parsed.success) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: parsed.error.errors[0].message },
+        { errors: result.error.issues },
         { status: 400 }
-      )
+      );
     }
 
-    const { name, email, password, role } = parsed.data
+    const { name, email, password, role } = result.data;
 
-    // چک تکراری بودن ایمیل
-    const existing = await db.user.findUnique({ where: { email } })
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json(
-        { error: 'این ایمیل قبلاً ثبت شده است' },
+        { error: "این ایمیل قبلاً ثبت شده است" },
         { status: 409 }
-      )
+      );
     }
 
-    // هش پسورد
-    const hashedPassword = await hashPassword(password)
+    const hashedPassword = await hash(password, 10);
 
-    // ساخت کاربر
-    const user = await db.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         role,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-      },
-    })
+    });
 
-    // ساخت session
-    const token = await createSession({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    })
-    await setSessionCookie(token)
+    if (role === "COMPANY") {
+      await prisma.company.create({
+        data: {
+          userId: user.id,
+          name: name,
+        },
+      });
+    }
 
-    return NextResponse.json({ user }, { status: 201 })
+    const token = await new SignJWT({ userId: user.id, role: user.role })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("7d")
+      .sign(secret);
+
+    const response = NextResponse.json({
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    });
+
+    response.cookies.set("questup_session", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
+
+    return response;
   } catch (error) {
-    console.error('Register error:', error)
-    return NextResponse.json(
-      { error: 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.' },
-      { status: 500 }
-    )
+    console.error("Register error:", error);
+    return NextResponse.json({ error: "خطای سرور" }, { status: 500 });
   }
 }

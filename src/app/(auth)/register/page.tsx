@@ -1,143 +1,113 @@
-﻿'use client'
+﻿"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { RoleSelector } from '@/components/ui/RoleSelector'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { RoleSelector } from "@/components/ui/RoleSelector";
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'JOBSEEKER' as 'JOBSEEKER' | 'COMPANY',
-  })
+  const router = useRouter();
+  const [role, setRole] = useState<"JOBSEEKER" | "COMPANY">("JOBSEEKER");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, role }),
+      });
 
-      const data = await res.json()
+      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'خطا در ثبت‌نام')
-        return
+        if (data.errors) {
+          setError(data.errors.map((e: { message: string }) => e.message).join("، "));
+        } else {
+          setError(data.error || "خطا در ثبت‌نام");
+        }
+        return;
       }
 
-      router.push('/dashboard')
-      router.refresh()
+      router.push("/dashboard");
+      router.refresh();
     } catch {
-      setError('خطای شبکه. دوباره تلاش کنید.')
+      setError("خطای شبکه");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br bg-primary flex items-center justify-center text-xl">
-              🎮
+    <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-12">
+      <div className="w-full max-w-md rounded-xl2 border border-line bg-paper p-8 shadow-soft">
+        <h1 className="mb-2 text-2xl font-bold text-ink">خوش اومدی به کوئست‌آپ!</h1>
+        <p className="mb-6 text-sm text-muted">
+          مسیر شغلیت رو با حال‌وهوای خودت شروع کن
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <RoleSelector value={role} onChange={setRole} />
+
+          <Input
+            label="نام"
+            type="text"
+            placeholder="مثلاً سارا"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            minLength={2}
+          />
+
+          <Input
+            label="ایمیل"
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            dir="ltr"
+          />
+
+          <Input
+            label="رمز عبور"
+            type="password"
+            placeholder="حداقل ۶ کاراکتر"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            dir="ltr"
+          />
+
+          {error && (
+            <div className="rounded-lg bg-cherry/10 p-3 text-sm text-cherry">
+              {error}
             </div>
-            <span className="font-bold text-xl text-foreground">QuestUp</span>
+          )}
+
+          <Button type="submit" className="w-full" loading={loading}>
+            ثبت‌نام
+          </Button>
+        </form>
+
+        <p className="mt-6 text-center text-sm text-muted">
+          قبلاً ثبت‌نام کردی؟{" "}
+          <Link href="/login" className="font-medium text-violet hover:underline">
+            وارد شو
           </Link>
-        </div>
-
-        <div className="bg-card rounded-lg shadow-sm p-8 border border-border">
-          <div className="mb-6">
-            <h1 className="text-2xl font-extrabold text-foreground mb-2">
-              خوش اومدی 👋
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              یه حساب بساز و مسیر شغلی‌ت رو شروع کن
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <RoleSelector
-              value={form.role}
-              onChange={(role) => setForm({ ...form, role })}
-            />
-
-            <Input
-              label="نام و نام خانوادگی"
-              type="text"
-              placeholder="علی رضایی"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              required
-              minLength={2}
-            />
-
-            <Input
-              label="ایمیل"
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-              dir="ltr"
-            />
-
-            <Input
-              label="پسورد"
-              type="password"
-              placeholder="حداقل ۸ کاراکتر"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-              minLength={8}
-              dir="ltr"
-            />
-
-            {error && (
-              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" disabled={loading} className="w-full">
-  {loading ? (
-    <span className="flex items-center gap-2">
-      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      در حال ساخت...
-    </span>
-  ) : (
-    'ساخت حساب'
-  )}
-</Button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            قبلاً ثبت‌نام کردی؟{' '}
-            <Link
-              href="/login"
-              className="font-semibold text-primary hover:underline"
-            >
-              ورود
-            </Link>
-          </div>
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          با ثبت‌نام، شرایط استفاده و حریم خصوصی را می‌پذیرید.
         </p>
       </div>
     </div>
-  )
+  );
 }

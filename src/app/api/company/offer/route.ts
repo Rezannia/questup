@@ -1,79 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { z } from 'zod'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { offerSchema } from "@/lib/validators";
+import { getSession } from "@/lib/auth";
 
-const offerSchema = z.object({
-  jobseekerId: z.string(),
-  message: z.string().min(10, 'پیام باید حداقل ۱۰ کاراکتر باشد').max(500),
-})
-
-export async function POST(req: NextRequest) {
-  const session = await getSession()
-  if (!session) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
-
-  if (session.role !== 'COMPANY') {
-    return NextResponse.json(
-      { error: 'فقط شرکت‌ها می‌تونن پیشنهاد بدن' },
-      { status: 403 }
-    )
-  }
-
+export async function POST(request: Request) {
   try {
-    const body = await req.json()
-    const parsed = offerSchema.safeParse(body)
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0].message },
-        { status: 400 }
-      )
+    const session = await getSession();
+    if (!session || session.role !== "COMPANY") {
+      return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 401 });
     }
 
-    const { jobseekerId, message } = parsed.data
+    const body = await request.json();
+    const result = offerSchema.safeParse(body);
 
-    const company = await db.company.findUnique({
+    if (!result.success) {
+      return NextResponse.json(
+        { errors: result.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const company = await prisma.company.findUnique({
       where: { userId: session.userId },
-    })
+    });
 
     if (!company) {
-      return NextResponse.json(
-        { error: 'پروفایل شرکت پیدا نشد. اول پروفایل شرکت رو بساز.' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "پروفایل شرکت یافت نشد" }, { status: 404 });
     }
 
-    const existing = await db.application.findFirst({
-      where: {
-        userId: jobseekerId,
-        companyId: company.id,
-      },
-    })
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'قبلاً به این کارجو پیشنهاد دادی' },
-        { status: 409 }
-      )
-    }
-
-    const application = await db.application.create({
+    const application = await prisma.application.create({
       data: {
-        userId: jobseekerId,
+        userId: result.data.jobseekerId,
         companyId: company.id,
-        message,
-        status: 'pending',
+        message: result.data.message,
+        status: "pending",
       },
-    })
+    });
 
-    return NextResponse.json({ application }, { status: 201 })
+    return NextResponse.json({ application }, { status: 201 });
   } catch (error) {
-    console.error('Offer error:', error)
-    return NextResponse.json(
-      { error: 'خطا در ارسال پیشنهاد' },
-      { status: 500 }
-    )
+    console.error("Send offer error:", error);
+    return NextResponse.json({ error: "خطای سرور" }, { status: 500 });
   }
 }

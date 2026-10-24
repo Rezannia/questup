@@ -1,0 +1,46 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        bg: "#f5f1e8",
+        paper: "#fffdf7",
+        ink: "#1f1d24",
+        muted: "#767162",
+        line: "#e8e2d4",
+        violet: {
+          DEFAULT: "#1e3a8a",
+          deep: "#16306e",
+          soft: "#3b5ba9",
+        },
+        lilac: "#7c9ad9",
+        lime: {
+          DEFAULT: "#8b9d5a",
+          deep: "#6f7f45",
+        },
+        amber: {
+          DEFAULT: "#f4c95d",
+          deep: "#e0b13e",
+        },
+        cherry: "#a8324a",
+        pink: "#c98a7a",
+      },
+      fontFamily: {
+        vazir: ["Vazirmatn", "sans-serif"],
+      },
+      borderRadius: {
+        xl2: "22px",
+      },
+      boxShadow: {
+        soft: "0 16px 45px rgba(47,37,25,.08)",
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;

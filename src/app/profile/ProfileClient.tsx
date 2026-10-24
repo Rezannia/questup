@@ -1,152 +1,278 @@
-﻿'use client'
+﻿"use client";
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import useSWR from 'swr'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from "react";
+import useSWR from "swr";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Save,
+  Sparkles,
+  Trophy,
+  Target,
+  Calendar,
+  CheckCircle,
+  Edit3,
+  X,
+} from "lucide-react";
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: 'JOBSEEKER' | 'COMPANY' | 'ADMIN'
-  bio: string | null
-  skills: string | null
-}
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-interface ProfileData {
-  user: User
-}
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json()) as Promise<ProfileData>
+const AVATARS = [
+  "👧", "👦", "🧑", "👩", "👨", "🧕", "👱", "🧔",
+  "👩‍💻", "👨‍💻", "🦊", "🐼", "🐯", "🦁", "🐸", "🐨",
+];
 
 export default function ProfileClient() {
-  const { data, mutate, isLoading } = useSWR('/api/profile', fetcher)
-  const [editing, setEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const { data, mutate, isLoading } = useSWR("/api/profile", fetcher);
+  const { data: progressData } = useSWR("/api/progress", fetcher);
 
-  const [form, setForm] = useState({ name: '', bio: '' })
+  const user = data?.user;
+  const stages = progressData?.stages || [];
+  const medals = progressData?.medals || [];
+  const totalXp = progressData?.totalXp || 0;
+  const level = progressData?.level || 1;
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [skills, setSkills] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (data?.user) {
-      setForm({ name: data.user.name, bio: data.user.bio || '' })
+    if (user) {
+      setName(user.name || "");
+      setBio(user.bio || "");
+      setAvatar(user.avatar || "🧑");
+      setSkills(user.skills ? JSON.parse(user.skills).join(", ") : "");
     }
-  }, [data])
+  }, [user]);
 
   async function handleSave() {
-    setSaving(true)
-    setError('')
-    setSuccess('')
+    setSaving(true);
     try {
-      const res = await fetch('/api/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      const result = await res.json()
-      if (!res.ok) { setError(result.error || 'خطا در ذخیره'); return }
-      await mutate()
-      setEditing(false)
-      setSuccess('اطلاعات ذخیره شد')
-      setTimeout(() => setSuccess(''), 3000)
-    } catch { setError('خطای شبکه') } finally { setSaving(false) }
+      await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          bio,
+          avatar,
+          skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
+        }),
+      });
+      mutate();
+      setIsEditing(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (isLoading || !data) {
+  if (isLoading || !user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">در حال بارگذاری...</p>
+      <div className="p-6">
+        <div className="h-40 animate-pulse rounded-xl2 bg-line/50" />
       </div>
-    )
+    );
   }
-
-  const { user } = data
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border">
-        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="text-xl">🎮</span>
-            <span className="font-bold text-lg text-foreground">کوئست‌آپ</span>
-          </Link>
-          <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">داشبورد</Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-bg px-4 pb-24 pt-6">
+      {/* کارت پروفایل */}
+      <div className="relative overflow-hidden rounded-xl2 border border-line bg-paper p-6 shadow-soft">
+        {/* دکمه ویرایش */}
+        <button
+          onClick={() => setIsEditing(!isEditing)}
+          className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-bg text-muted hover:text-ink"
+        >
+          {isEditing ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+        </button>
 
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-12 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-primary mb-2 uppercase tracking-wider">حساب کاربری</p>
-            <h1 className="text-4xl font-bold text-foreground mb-2">{user.name}</h1>
-            <p className="text-muted-foreground">{user.email}</p>
+        {/* آواتار و نام */}
+        <div className="flex flex-col items-center">
+          <div className="relative mb-3">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-violet/10 text-5xl">
+              {avatar || "🧑"}
+            </div>
+            <Badge
+              variant="violet"
+              className="absolute -bottom-1 left-1/2 -translate-x-1/2"
+            >
+              لِوِل {level}
+            </Badge>
           </div>
-          {!editing && (
-            <Button variant="outline" onClick={() => setEditing(true)}>
-              ویرایش
-            </Button>
+
+          {isEditing ? (
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="نام شما"
+              className="text-center"
+            />
+          ) : (
+            <h1 className="text-xl font-bold text-ink">{user.name}</h1>
           )}
+          <p className="mt-1 text-xs text-muted">{user.email}</p>
         </div>
 
-        {success && <div className="mb-6 p-3 border border-primary/30 bg-primary/5 rounded-md text-sm text-primary">{success}</div>}
-        {error && <div className="mb-6 p-3 border border-destructive/30 bg-destructive/5 rounded-md text-sm text-destructive">{error}</div>}
-
-        {/* Info */}
-        {!editing ? (
-          <div className="space-y-8 border-t border-border pt-8">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">نقش</p>
-              <p className="font-semibold text-foreground">
-                {user.role === 'JOBSEEKER' ? 'کارجو' : 'شرکت'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">درباره من</p>
-              <p className="text-foreground leading-relaxed">
-                {user.bio || 'هنوز توضیحی اضافه نکرده‌اید.'}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6 border-t border-border pt-8">
-            <div className="space-y-2">
-              <Label htmlFor="name">نام</Label>
-              <Input
-                id="name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                maxLength={50}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bio">درباره من</Label>
-              <textarea
-                id="bio"
-                value={form.bio}
-                onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                rows={4}
-                maxLength={300}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none"
-              />
-              <p className="text-xs text-muted-foreground">{form.bio.length} / 300</p>
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? 'در حال ذخیره...' : 'ذخیره'}
-              </Button>
-              <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>
-                انصراف
-              </Button>
+        {/* انتخاب آواتار (فقط در حالت ویرایش) */}
+        {isEditing && (
+          <div className="mt-5">
+            <label className="mb-2 block text-xs font-medium text-muted">
+              آواتار
+            </label>
+            <div className="grid grid-cols-8 gap-1.5">
+              {AVATARS.map((a) => (
+                <button
+                  key={a}
+                  onClick={() => setAvatar(a)}
+                  className={`flex h-9 w-9 items-center justify-center rounded-lg text-xl transition-all ${
+                    avatar === a
+                      ? "bg-violet/20 ring-2 ring-violet"
+                      : "bg-bg hover:bg-line"
+                  }`}
+                >
+                  {a}
+                </button>
+              ))}
             </div>
           </div>
         )}
+
+        {/* بیو */}
+        <div className="mt-5">
+          <label className="mb-2 block text-xs font-medium text-muted">
+            درباره من
+          </label>
+          {isEditing ? (
+            <Textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="چند خط درباره خودت بنویس..."
+              rows={3}
+              maxLength={300}
+            />
+          ) : (
+            <p className="text-sm leading-7 text-ink">
+              {user.bio || "هنوز بیویی نداری. یه چیزی درباره خودت بنویس!"}
+            </p>
+          )}
+        </div>
+
+        {/* مهارت‌ها */}
+        <div className="mt-5">
+          <label className="mb-2 block text-xs font-medium text-muted">
+            مهارت‌ها
+          </label>
+          {isEditing ? (
+            <Input
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
+              placeholder="مثلاً: React, طراحی, تیم‌ورک"
+            />
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {(user.skills ? JSON.parse(user.skills) : []).length > 0 ? (
+                JSON.parse(user.skills).map((s: string) => (
+                  <Badge key={s} variant="lime">
+                    {s}
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-xs text-muted">هنوز مهارتی اضافه نکردی.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* دکمه ذخیره */}
+        {isEditing && (
+          <Button
+            onClick={handleSave}
+            loading={saving}
+            className="mt-5 w-full"
+          >
+            <Save className="ml-2 h-4 w-4" />
+            ذخیره تغییرات
+          </Button>
+        )}
+      </div>
+
+      {/* آمار */}
+      <div className="mt-5 grid grid-cols-3 gap-3">
+        <StatBox
+          icon={<Sparkles className="h-4 w-4" />}
+          value={totalXp}
+          label="XP"
+          color="amber"
+        />
+        <StatBox
+          icon={<Trophy className="h-4 w-4" />}
+          value={medals.length}
+          label="مدال"
+          color="lime"
+        />
+        <StatBox
+          icon={<Target className="h-4 w-4" />}
+          value={`${stages.filter((s: any) => s.completed).length}/۱۰`}
+          label="مرحله"
+          color="violet"
+        />
+      </div>
+
+      {/* پیشرفت XP */}
+      <div className="mt-5 rounded-xl2 border border-line bg-paper p-5">
+        <div className="mb-2 flex items-center justify-between text-xs">
+          <span className="font-medium text-ink">پیشرفت تا لِوِل بعدی</span>
+          <span className="text-muted">{totalXp % 500} / 500</span>
+        </div>
+        <Progress value={(totalXp % 500) / 5} />
+        <p className="mt-3 text-xs text-muted">
+          {500 - (totalXp % 500)} XP تا لِوِل {level + 1}
+        </p>
+      </div>
+
+      {/* پیام انگیزشی */}
+      <div className="mt-5 rounded-xl2 bg-gradient-to-l from-violet to-violet-soft p-5 text-white">
+        <p className="mb-1 text-xs opacity-80">پروفایل کامل = دیده شدن بیشتر</p>
+        <p className="text-sm font-medium leading-6">
+          هر چیزی که درباره خودت می‌نویسی، شانس دیده شدنت توسط شرکت‌ها رو بیشتر می‌کنه! 🚀
+        </p>
       </div>
     </div>
-  )
+  );
+}
+
+function StatBox({
+  icon,
+  value,
+  label,
+  color,
+}: {
+  icon: React.ReactNode;
+  value: string | number;
+  label: string;
+  color: "violet" | "amber" | "lime";
+}) {
+  const colors = {
+    violet: "bg-violet/10 text-violet",
+    amber: "bg-amber/10 text-amber-deep",
+    lime: "bg-lime/10 text-lime-deep",
+  };
+
+  return (
+    <div className="rounded-xl2 border border-line bg-paper p-4 text-center">
+      <div className={`mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${colors[color]}`}>
+        {icon}
+      </div>
+      <p className="text-lg font-bold text-ink">{value}</p>
+      <p className="text-[10px] text-muted">{label}</p>
+    </div>
+  );
 }
