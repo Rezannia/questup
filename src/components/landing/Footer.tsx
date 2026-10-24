@@ -1,51 +1,75 @@
-﻿import Link from 'next/link'
+﻿"use client";
+
+import Link from "next/link";
+import { Heart, Mail, Send, Globe } from "lucide-react";
 
 export function Footer() {
+  const year = new Date().getFullYear();
+
   return (
-    <footer className="border-t border-border bg-background">
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-4 gap-8 mb-10">
+    <footer className="border-t border-line bg-paper">
+      <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* برند */}
-          <div className="md:col-span-2">
-            <Link href="/" className="inline-flex items-center gap-2 mb-4">
-              <span className="text-xl">🎮</span>
-              <span className="font-bold text-lg text-foreground">کوئست‌آپ</span>
-            </Link>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-              پلتفرم استخدام برای نسل جدید. مسیر شغلی‌ات را شفاف و هدفمند بساز.
+          <div className="col-span-2 md:col-span-1">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet font-bold text-white">
+                Q
+              </div>
+              <span className="text-lg font-bold text-ink">کوئست‌آپ</span>
+            </div>
+            <p className="text-xs leading-6 text-muted">
+              پلتفرم گیم‌فای‌شده کاریابی برای نسل Z.
+              <br />
+              مسیر شغلی، ولی با وایب خودت.
             </p>
           </div>
 
           {/* لینک‌ها */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4 text-sm">محصول</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">ویژگی‌ها</a></li>
-              <li><a href="#how" className="text-muted-foreground hover:text-foreground transition-colors">چطور کار می‌کنه</a></li>
-              <li><Link href="/about" className="text-muted-foreground hover:text-foreground transition-colors">درباره ما</Link></li>
-              <li><Link href="/register" className="text-muted-foreground hover:text-foreground transition-colors">ثبت‌نام</Link></li>
+            <h4 className="mb-3 text-sm font-bold text-ink">کوئست‌آپ</h4>
+            <ul className="space-y-2 text-xs text-muted">
+              <li><Link href="/about" className="hover:text-ink">درباره ما</Link></li>
+              <li><Link href="/jobs" className="hover:text-ink">شغل‌ها</Link></li>
+              <li><Link href="/register" className="hover:text-ink">ثبت‌نام</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold text-foreground mb-4 text-sm">حساب</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link href="/login" className="text-muted-foreground hover:text-foreground transition-colors">ورود</Link></li>
-              <li><Link href="/register" className="text-muted-foreground hover:text-foreground transition-colors">ثبت‌نام</Link></li>
-              <li><Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">داشبورد</Link></li>
+            <h4 className="mb-3 text-sm font-bold text-ink">برای شرکت‌ها</h4>
+            <ul className="space-y-2 text-xs text-muted">
+              <li><Link href="/register" className="hover:text-ink">ثبت شرکت</Link></li>
+              <li><Link href="/company" className="hover:text-ink">پنل شرکت</Link></li>
             </ul>
+          </div>
+
+          <div>
+            <h4 className="mb-3 text-sm font-bold text-ink">ارتباط</h4>
+            <ul className="space-y-2 text-xs text-muted">
+              <li><Link href="/about" className="hover:text-ink">تماس با ما</Link></li>
+              <li><a href="mailto:hello@questup.ir" className="hover:text-ink">hello@questup.ir</a></li>
+            </ul>
+            <div className="mt-3 flex gap-2">
+              <a href="mailto:hello@questup.ir" className="flex h-8 w-8 items-center justify-center rounded-lg bg-bg text-muted hover:text-ink">
+                <Mail className="h-4 w-4" />
+              </a>
+              <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg bg-bg text-muted hover:text-ink">
+                <Send className="h-4 w-4" />
+              </a>
+              <a href="#" className="flex h-8 w-8 items-center justify-center rounded-lg bg-bg text-muted hover:text-ink">
+                <Globe className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
 
-        <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} کوئست‌آپ. همه حقوق محفوظ است.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            ساخته‌شده برای نسل جدید
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-xs text-muted md:flex-row">
+          <p>© {year} کوئست‌آپ. تمامی حقوق محفوظ است.</p>
+          <p className="flex items-center gap-1">
+            ساخته شده با <Heart className="h-3 w-3 fill-cherry text-cherry" /> در ایران
           </p>
         </div>
       </div>
     </footer>
-  )
+  );
 }

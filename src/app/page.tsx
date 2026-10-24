@@ -1,26 +1,33 @@
-﻿import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
-import { Header } from '@/components/landing/Header'
-import { Hero } from '@/components/landing/Hero'
-import { LatestJobs } from '@/components/landing/LatestJobs'
-import { HowItWorks } from '@/components/landing/HowItWorks'
-import { FinalCTA } from '@/components/landing/FinalCTA'
-import { Footer } from '@/components/landing/Footer'
+﻿import { Header } from "@/components/landing/Header";
+import { Hero } from "@/components/landing/Hero";
+import { TrustBar } from "@/components/landing/TrustBar";
+import { WhyQuestUp } from "@/components/landing/WhyQuestUp";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { JourneyPreview } from "@/components/landing/JourneyPreview";
+import { Careers } from "@/components/landing/Careers";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { ForEmployers } from "@/components/landing/ForEmployers";
+import { FAQ } from "@/components/landing/FAQ";
+import { FinalCTA } from "@/components/landing/FinalCTA";
+import { Footer } from "@/components/landing/Footer";
 
-export default async function HomePage() {
-  const session = await getSession()
-  if (session) redirect('/dashboard')
-
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-bg">
       <Header />
-      <main>
+      <main className="pt-16 md:pt-20">
         <Hero />
-        <LatestJobs />
+        <TrustBar />
+        <WhyQuestUp />
         <HowItWorks />
+        <JourneyPreview />
+        <Careers />
+        <Testimonials />
+        <ForEmployers />
+        <FAQ />
         <FinalCTA />
       </main>
       <Footer />
     </div>
-  )
+  );
 }
