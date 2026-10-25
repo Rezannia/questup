@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,6 +9,10 @@ datasource db {
   provider = "postgresql"
   url      = env("PRISMA_DATABASE_URL")
 }
+
+// ============================================
+// مدل‌های اصلی
+// ============================================
 
 model User {
   id            String    @id @default(cuid())
@@ -17,18 +24,14 @@ model User {
   bio           String?
   skills        String?
   website       String?
-  preferredLocation  String?
-  preferredWorkMode  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  progress           UserProgress[]
-  medals             UserMedal[]
-  tasks              UserTask[]
-  challengeAttempts  UserChallengeAttempt[]
-  userSkills         UserSkill[]
-  company            Company?
-  applications       Application[]
+  progress      UserProgress[]
+  medals        UserMedal[]
+  company       Company?
+  applications  Application[]
+  blogPosts     BlogPost[]
 }
 
 enum Role {
@@ -38,8 +41,8 @@ enum Role {
 }
 
 model Stage {
-  id          Int       @id @default(autoincrement())
-  order       Int       @unique
+  id          Int            @id @default(autoincrement())
+  order       Int            @unique
   title       String
   description String
   icon        String
@@ -47,42 +50,10 @@ model Stage {
   medalIcon   String
   x           Float
   y           Float
-  xpReward    Int       @default(100)
+  xpReward    Int            @default(100)
 
   progress    UserProgress[]
   medals      UserMedal[]
-  tasks       StageTask[]
-}
-
-model StageTask {
-  id          Int      @id @default(autoincrement())
-  stageId     Int
-  order       Int
-  title       String
-  description String?
-  xpReward    Int      @default(20)
-  taskType    String   @default("manual")
-  checkKey    String?
-  actionUrl   String?
-  actionLabel String?
-
-  stage       Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
-  userTasks   UserTask[]
-
-  @@unique([stageId, order])
-}
-
-model UserTask {
-  id          String    @id @default(cuid())
-  userId      String
-  taskId      Int
-  completed   Boolean   @default(false)
-  completedAt DateTime?
-
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task        StageTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, taskId])
 }
 
 model UserProgress {
@@ -110,53 +81,6 @@ model UserMedal {
   @@unique([userId, stageId])
 }
 
-model SkillChallenge {
-  id          String   @id @default(cuid())
-  skillName   String
-  title       String
-  description String
-  type        String   @default("quiz")
-  difficulty  String   @default("easy")
-  xpReward    Int      @default(50)
-  questions   String?
-  createdAt   DateTime @default(now())
-
-  attempts    UserChallengeAttempt[]
-
-  @@index([skillName])
-}
-
-model UserChallengeAttempt {
-  id          String   @id @default(cuid())
-  userId      String
-  challengeId String
-  score       Int      @default(0)
-  passed      Boolean  @default(false)
-  answers     String?
-  completedAt DateTime @default(now())
-
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  challenge   SkillChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, challengeId])
-}
-
-model UserSkill {
-  id          String   @id @default(cuid())
-  userId      String
-  skillName   String
-  level       Int      @default(1)
-  score       Int      @default(0)
-  verified    Boolean  @default(false)
-  evidence    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, skillName])
-}
-
 model Company {
   id          String   @id @default(cuid())
   userId      String   @unique
@@ -166,29 +90,10 @@ model Company {
   industry    String?
   size        String?
   description String?
-  verified    Boolean  @default(false)
-  featured    Boolean  @default(false)
 
-  story           String?
-  whyGenZ         String?
-  employeeQuote   String?
-  employeeName    String?
-  employeeRole    String?
-  foundedYear     Int?
-
-  flexibleHours      Boolean  @default(false)
-  remoteWork         Boolean  @default(false)
-  learningBudget     Boolean  @default(false)
-  transparentSalary  Boolean  @default(false)
-  jobSecurity        Boolean  @default(false)
-  goodManager        Boolean  @default(false)
-  realValues         Boolean  @default(false)
-  meaningfulWork     Boolean  @default(false)
-  clearCareerPath    Boolean  @default(false)
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   applications Application[]
-  jobs         Job[]
+  jobs        Job[]
 }
 
 model Job {
@@ -202,9 +107,6 @@ model Job {
   salary      String?
   skills      String?
   active      Boolean  @default(true)
-  workMode       String   @default("onsite")
-  isStable       Boolean  @default(false)
-  companySize    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -224,20 +126,33 @@ model Application {
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }
 
+// ============================================
+// مدل بلاگ
+// ============================================
+
 model BlogPost {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String
-  content     String
-  coverImage  String?
-  category    String   @default("general")
-  author      String   @default("تیم کوئست‌آپ")
-  authorImage String?
-  readTime    Int      @default(5)
-  featured    Boolean  @default(false)
-  published   Boolean  @default(true)
-  views       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  excerpt       String
+  content       String
+  category      String   @default("general")
+  categoryLabel String   @default("عمومی")
+  categoryColor String   @default("violet")
+  author        String   @default("تیم کوئست‌آپ")
+  authorRole    String   @default("تولید محتوا")
+  readTime      Int      @default(5)
+  image         String?
+  tags          String   @default("[]")
+  featured      Boolean  @default(false)
+  published     Boolean  @default(true)
+  views         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  authorId      String?
+  authorUser    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([published, createdAt])
+  @@index([category])
 }

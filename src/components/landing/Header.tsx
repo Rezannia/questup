@@ -18,10 +18,12 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const navLinks = [
-    { href: "/", label: "خانه" },
-    { href: "/jobs", label: "شغل‌ها" },
-    { href: "/about", label: "درباره ما" },
+  
+    const navLinks = [
+  { href: "/", label: "خانه" },
+  { href: "/jobs", label: "شغل‌ها" },
+  { href: "/blog", label: "بلاگ" },  // ← جدید
+  { href: "/about", label: "درباره ما" },
   ];
 
   return (
